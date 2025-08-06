@@ -61,6 +61,7 @@ namespace boilerplate.web.Controllers
             {
                 _context.Add(mPermissions);
                 await _context.SaveChangesAsync();
+                TempData["success"] = "created successfully";
                 return RedirectToAction(nameof(Index));
             }
             return View(mPermissions);
@@ -99,6 +100,7 @@ namespace boilerplate.web.Controllers
                 try
                 {
                     _context.Update(mPermissions);
+                    TempData["success"] = "updated successfully";
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -143,6 +145,7 @@ namespace boilerplate.web.Controllers
             var mPermissions = await _context.MPermissions.FindAsync(id);
             if (mPermissions != null)
             {
+                TempData["success"] = "deleted successfully";
                 _context.MPermissions.Remove(mPermissions);
             }
 

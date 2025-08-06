@@ -7,23 +7,40 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using boilerplate.web.Data;
 using boilerplate.web.Models;
+using boilerplate.web.Services;
+using boilerplate.web.Models.Dto;
+using Newtonsoft.Json;
+using NuGet.Protocol.Core.Types;
 
 namespace boilerplate.web.Controllers
 {
     public class UserController : Controller
     {
-        private readonly MasterDbContext _context;
+        private readonly IUserService _userService;
+        private readonly IRoleService _roleService;
 
-        public UserController(MasterDbContext context)
+        public UserController(IUserService userService, IRoleService roleService)
         {
-            _context = context;
+            _userService = userService;
+            _roleService = roleService;
         }
 
         // GET: User
         public async Task<IActionResult> Index()
         {
-            var masterDbContext = _context.Users.Include(m => m.Roles);
-            return View(await masterDbContext.ToListAsync());
+            List<MUser>? list = new List<MUser>();
+
+            APIResponseDto? response = await _userService.GetAllAsync();
+
+            if (response != null && response.IsSuccess)
+            {
+                list = JsonConvert.DeserializeObject<List<MUser>>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                TempData["error"] = response?.Message;
+            }
+            return View(list);
         }
 
         // GET: User/Details/5
@@ -34,61 +51,99 @@ namespace boilerplate.web.Controllers
                 return NotFound();
             }
 
-            var mUser = await _context.Users
-                .Include(m => m.Roles)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (mUser == null)
+            int pkid = 0;
+            if (id != null && id > 0)
             {
-                return NotFound();
+                pkid = (int)id;
             }
 
-            return View(mUser);
+            APIResponseDto? response = await _userService.GetByIdAsync(pkid);
+            MUser? mUser = new MUser();
+            if (response != null && response.IsSuccess)
+            {
+                mUser = JsonConvert.DeserializeObject<MUser>(Convert.ToString(response.Result));
+                return View(mUser);
+            }
+            else
+            {
+                TempData["error"] = response?.Message;
+            }
+            ViewData["RolesId"] = BindRole(mUser.RolesId);
+            return NotFound();
+        }
+
+        private async Task<SelectList> BindRole(int? selectedRole = null)
+        {
+            APIResponseDto? response = await _roleService.GetAllAsync();
+
+            List<MRoles> lstmRoles = new List<MRoles>();
+
+            if (response != null && response.IsSuccess)
+            {
+                lstmRoles = JsonConvert.DeserializeObject<List<MRoles>>(Convert.ToString(response.Result));
+            }
+            return new SelectList(lstmRoles, "Id", "Title", selectedRole);
         }
 
         // GET: User/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["RolesId"] = new SelectList(_context.Roles, "Id", "Title");
+            ViewData["RolesId"] = await BindRole();
             return View();
         }
 
         // POST: User/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,FullName,Email,Password,RolesId")] MUser mUser)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(mUser);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                APIResponseDto? response = await _userService.CreateAsync(mUser);
+
+                if (response != null && response.IsSuccess)
+                {
+                    TempData["success"] = "created successfully";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["error"] = response?.Message;
+                }
             }
-            ViewData["RolesId"] = new SelectList(_context.Roles, "Id", "Id", mUser.RolesId);
+            ViewData["RolesId"] = BindRole(mUser.RolesId);
             return View(mUser);
         }
 
         // GET: User/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
+            int pkid = 0;
+            if (id != null && id > 0)
             {
-                return NotFound();
+                pkid = (int)id;
             }
 
-            var mUser = await _context.Users.FindAsync(id);
-            if (mUser == null)
+            APIResponseDto? response = await _userService.GetByIdAsync(pkid);
+            MUser? mUser = new MUser();
+            if (response != null && response.IsSuccess)
             {
-                return NotFound();
+                mUser = JsonConvert.DeserializeObject<MUser>(Convert.ToString(response.Result));
+                ViewData["RolesId"] = await BindRole(mUser.RolesId);
+
+                return View(mUser);
             }
-            ViewData["RolesId"] = new SelectList(_context.Roles, "Id", "Id", mUser.RolesId);
-            return View(mUser);
+            else
+            {
+                TempData["error"] = response?.Message;
+                return RedirectToAction(nameof(Index));
+            }
+
+            //ViewData["RolesId"] = new SelectList(_context.Roles, "Id", "Title", mUser.RolesId);
+            //return NotFound();
         }
 
         // POST: User/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,FullName,Email,Password,RolesId")] MUser mUser)
@@ -102,8 +157,17 @@ namespace boilerplate.web.Controllers
             {
                 try
                 {
-                    _context.Update(mUser);
-                    await _context.SaveChangesAsync();
+                    APIResponseDto? response = await _userService.UpdateAsync(mUser);
+
+                    if (response != null && response.IsSuccess)
+                    {
+                        TempData["success"] = "update successfully";
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        TempData["error"] = response?.Message;
+                    }
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -118,7 +182,7 @@ namespace boilerplate.web.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["RolesId"] = new SelectList(_context.Roles, "Id", "Id", mUser.RolesId);
+            ViewData["RolesId"] = BindRole(mUser.RolesId);
             return View(mUser);
         }
 
@@ -130,15 +194,19 @@ namespace boilerplate.web.Controllers
                 return NotFound();
             }
 
-            var mUser = await _context.Users
-                .Include(m => m.Roles)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (mUser == null)
+            APIResponseDto? response = await _userService.GetByIdAsync((int)id);
+            var mUser = new MUser();
+            if (response != null && response.IsSuccess)
             {
+                mUser = JsonConvert.DeserializeObject<MUser>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                TempData["error"] = response?.Message;
                 return NotFound();
             }
-
             return View(mUser);
+
         }
 
         // POST: User/Delete/5
@@ -146,19 +214,40 @@ namespace boilerplate.web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var mUser = await _context.Users.FindAsync(id);
-            if (mUser != null)
+            APIResponseDto? response = await _userService.GetByIdAsync((int)id);
+            var mUser = new MUser();
+            if (response != null && response.IsSuccess)
             {
-                _context.Users.Remove(mUser);
+                mUser = JsonConvert.DeserializeObject<MUser>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                TempData["error"] = response?.Message;
+                return NotFound();
             }
 
-            await _context.SaveChangesAsync();
+
+            if (mUser != null)
+            {
+                APIResponseDto? delresponse = await _userService.DeleteAsync(id);
+                if (delresponse != null && delresponse.IsSuccess)
+                {
+                    mUser = JsonConvert.DeserializeObject<MUser>(Convert.ToString(response.Result));
+                    TempData["success"] = "delete successfully";
+                }
+                else
+                {
+                    TempData["error"] = response?.Message;
+                    return NotFound();
+                }
+            }
             return RedirectToAction(nameof(Index));
         }
 
         private bool MUserExists(int id)
         {
-            return _context.Users.Any(e => e.Id == id);
+            return false;
+            //return _context.Users.Any(e => e.Id == id);
         }
     }
 }

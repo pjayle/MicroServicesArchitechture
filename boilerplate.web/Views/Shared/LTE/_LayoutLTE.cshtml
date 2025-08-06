@@ -46,6 +46,7 @@
     <!--begin::Required Plugin(AdminLTE)-->
     <link rel="stylesheet" href="~/lte/css/adminlte.css" />
     <!--end::Required Plugin(AdminLTE)-->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.css" />
     <!-- apexcharts -->
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.css"
@@ -73,6 +74,7 @@
             <!--begin::Container-->
             @RenderBody()
             <!--end::Container-->
+            <partial name="_toaster.cshtml" />
         </main>
         <!--end::App Main-->
         <!--begin::Footer-->

@@ -15,8 +15,14 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+CONST.MICRO_SERVICE_API_BASE_URL = builder.Configuration["ServiceUrls:MICRO_SERVICE_API_BASE_URL"];
 
+builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IBaseService, BaseService>();
+builder.Services.AddScoped<ITokenProvider, TokenProvider>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserSessionService, UserSessionService>();
 builder.Services.AddScoped<MyAuthorization>();
 builder.Services.AddControllersWithViews(options =>

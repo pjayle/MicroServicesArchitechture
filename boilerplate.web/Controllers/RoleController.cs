@@ -1,28 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using boilerplate.web.Data;
+﻿
 using boilerplate.web.Models;
+using boilerplate.web.Models.Dto;
+using boilerplate.web.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 
 namespace boilerplate.web.Controllers
 {
     public class RoleController : Controller
     {
-        private readonly MasterDbContext _context;
+        private readonly IRoleService _roleService;
 
-        public RoleController(MasterDbContext context)
+        public RoleController(IRoleService roleService)
         {
-            _context = context;
+            _roleService = roleService;
         }
 
         // GET: Role
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Roles.ToListAsync());
+            List<MRoles>? list = new List<MRoles>();
+
+            APIResponseDto? response = await _roleService.GetAllAsync();
+
+            if (response != null && response.IsSuccess)
+            {
+                list = JsonConvert.DeserializeObject<List<MRoles>>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                TempData["error"] = response?.Message;
+            }
+            return View(list);
         }
 
         // GET: Role/Details/5
@@ -33,13 +43,23 @@ namespace boilerplate.web.Controllers
                 return NotFound();
             }
 
-            var mRoles = await _context.Roles
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (mRoles == null)
+            int pkid = 0;
+            if (id != null && id > 0)
             {
-                return NotFound();
+                pkid = (int)id;
             }
 
+            APIResponseDto? response = await _roleService.GetByIdAsync(pkid);
+            MRoles? mRoles = new MRoles();
+            if (response != null && response.IsSuccess)
+            {
+                mRoles = JsonConvert.DeserializeObject<MRoles>(Convert.ToString(response.Result));
+                return View(mRoles);
+            }
+            else
+            {
+                TempData["error"] = response?.Message;
+            }
             return View(mRoles);
         }
 
@@ -49,18 +69,23 @@ namespace boilerplate.web.Controllers
             return View();
         }
 
-        // POST: Role/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Title,Description")] MRoles mRoles)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(mRoles);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                APIResponseDto? response = await _roleService.CreateAsync(mRoles);
+
+                if (response != null && response.IsSuccess)
+                {
+                    TempData["success"] = "created successfully";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["error"] = response?.Message;
+                }
             }
             return View(mRoles);
         }
@@ -72,18 +97,27 @@ namespace boilerplate.web.Controllers
             {
                 return NotFound();
             }
-
-            var mRoles = await _context.Roles.FindAsync(id);
-            if (mRoles == null)
+            int pkid = 0;
+            if (id != null && id > 0)
             {
-                return NotFound();
+                pkid = (int)id;
             }
-            return View(mRoles);
+
+            APIResponseDto? response = await _roleService.GetByIdAsync(pkid);
+            MRoles? mUser = new MRoles();
+            if (response != null && response.IsSuccess)
+            {
+                mUser = JsonConvert.DeserializeObject<MRoles>(Convert.ToString(response.Result));
+                return View(mUser);
+            }
+            else
+            {
+                TempData["error"] = response?.Message;
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: Role/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description")] MRoles mRoles)
@@ -97,8 +131,17 @@ namespace boilerplate.web.Controllers
             {
                 try
                 {
-                    _context.Update(mRoles);
-                    await _context.SaveChangesAsync();
+                    APIResponseDto? response = await _roleService.UpdateAsync(mRoles);
+
+                    if (response != null && response.IsSuccess)
+                    {
+                        TempData["success"] = "update successfully";
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        TempData["error"] = response?.Message;
+                    }
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -124,14 +167,23 @@ namespace boilerplate.web.Controllers
                 return NotFound();
             }
 
-            var mRoles = await _context.Roles
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (mRoles == null)
+            APIResponseDto? response = await _roleService.GetByIdAsync((int)id);
+            var mRole = new MRoles();
+            if (response != null && response.IsSuccess)
+            {
+                mRole = JsonConvert.DeserializeObject<MRoles>(Convert.ToString(response.Result));
+            }
+            else
+            {
+                TempData["error"] = response?.Message;
+                return NotFound();
+            }
+            if (mRole == null)
             {
                 return NotFound();
             }
 
-            return View(mRoles);
+            return View(mRole);
         }
 
         // POST: Role/Delete/5
@@ -139,19 +191,43 @@ namespace boilerplate.web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var mRoles = await _context.Roles.FindAsync(id);
-            if (mRoles != null)
+            APIResponseDto? response = await _roleService.GetByIdAsync((int)id);
+            var mUser = new MRoles();
+            if (response != null && response.IsSuccess)
             {
-                _context.Roles.Remove(mRoles);
+                mUser = JsonConvert.DeserializeObject<MRoles>(Convert.ToString(response.Result));
+                TempData["success"] = "delete successfully";
+            }
+            else
+            {
+                TempData["error"] = response?.Message;
+                return NotFound();
             }
 
-            await _context.SaveChangesAsync();
+
+            if (mUser != null)
+            {
+                APIResponseDto? delresponse = await _roleService.DeleteAsync(id);
+                if (delresponse != null && delresponse.IsSuccess)
+                {
+                    mUser = JsonConvert.DeserializeObject<MRoles>(Convert.ToString(response.Result));
+                   
+                    TempData["success"] = "delete successfully";
+                    return RedirectToAction(nameof(Index));
+                }
+                else
+                {
+                    TempData["error"] = response?.Message;
+                    return NotFound();
+                }
+            }
             return RedirectToAction(nameof(Index));
         }
 
         private bool MRolesExists(int id)
         {
-            return _context.Roles.Any(e => e.Id == id);
+            return false;
+            //return _context.Roles.Any(e => e.Id == id);
         }
     }
 }

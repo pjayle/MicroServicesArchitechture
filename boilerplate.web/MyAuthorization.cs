@@ -39,9 +39,9 @@ namespace boilerplate.web
                     var loggedInUserRolePermission = _userSessionService.GetRolePermissionSession();
                     if (!loggedInUserRolePermission.Where(s => s.ModuleName.ToLower() == controllerName && s.ActionName.ToLower() == actionName).Any())
                     {
-                        filterContext.Result = new RedirectToRouteResult(
-                            new RouteValueDictionary { { "controller", "Home" }, { "action", "AccessDenied" } });
-                        return;
+                        //filterContext.Result = new RedirectToRouteResult(
+                        //    new RouteValueDictionary { { "controller", "Home" }, { "action", "AccessDenied" } });
+                        //return;
                     }
 
                 }

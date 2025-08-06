@@ -4,6 +4,104 @@
     ViewData["Title"] = "Delete";
 }
 
+<div>
+    <div class="app-content-header">
+        <!--begin::Container-->
+        <div class="container-fluid">
+            <!--begin::Row-->
+            <div class="row">
+                <div class="col-sm-6"><h3 class="mb-0">Permission Delete</h3></div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-end">
+                        <a asp-action="Index" class="btn btn-xs btn-primary">Back</a>
+                    </ol>
+                </div>
+            </div>
+            <!--end::Row-->
+        </div>
+        <!--end::Container-->
+    </div>
+    <div class="container-fluid">
+        <!--begin::Row-->
+        <div class="row g-4">
+            <!--begin::Col-->
+            <div class="col-md-12">
+                <!--begin::Quick Example-->
+                <div class="card card-primary card-outline mb-4">
+                    <!--begin::Header-->
+                    <div class="card-header"><div class="card-title">Quick Example</div></div>
+                    <!--end::Header-->
+                    <!--begin::Form-->
+
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <!--begin::Body-->
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="ModuleName" class="form-label">ModuleName</label>
+                                    <input asp-for="ModuleName" class="form-control" disabled />
+                                    <span asp-validation-for="ModuleName" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="Description" class="form-label">Description</label>
+                                    <input asp-for="Description" class="form-control" disabled />
+                                    <span asp-validation-for="Description" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="Icon" class="form-label">Icon</label>
+                                    <input asp-for="Icon" class="form-control" disabled />
+                                    <span asp-validation-for="Icon" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-check-label">
+                                        <input class="form-check-input" asp-for="IsMenu" disabled />
+                                        @* @Html.DisplayNameFor(model => model.IsMenu) *@
+                                    </label>
+                                    <span asp-validation-for="IsMenu" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="ActionName" class="form-label">ActionName</label>
+                                    <input asp-for="ActionName" class="form-control" disabled />
+                                    <span asp-validation-for="ActionName" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="Url" class="form-label">Url</label>
+                                    <input asp-for="Url" class="form-control" disabled />
+                                    <span asp-validation-for="Url" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ParentId" class="form-label">ParentId</label>
+                                    <input asp-for="ParentId" class="form-control" disabled />
+                                    <span asp-validation-for="ParentId" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Body-->
+                    <!--begin::Footer-->
+                     <div class="card-footer">
+                        <form asp-action="Delete">
+                            <input type="hidden" asp-for="Id" />
+                            <input type="submit" value="Delete" class="btn btn-danger" /> 
+                        </form>
+                    </div>
+                    <!--end::Footer-->
+                    <!--end::Form-->
+                </div>
+                <!--end::Quick Example-->
+            </div>
+            <!--end::Col-->
+        </div>
+        <!--end::Row-->
+    </div>
+</div>
+
+
+
 <h1>Delete</h1>
 
 <h3>Are you sure you want to delete this?</h3>
@@ -55,9 +153,5 @@
         </dd>
     </dl>
     
-    <form asp-action="Delete">
-        <input type="hidden" asp-for="Id" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> |
-        <a asp-action="Index">Back to List</a>
-    </form>
+   
 </div>

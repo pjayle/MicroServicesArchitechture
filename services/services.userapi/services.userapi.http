@@ -1,0 +1,6 @@
+@services.userapi_HostAddress = http://localhost:5127
+
+GET {{services.userapi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
