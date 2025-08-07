@@ -5,6 +5,7 @@ using boilerplate.web.Models;
 using boilerplate.web.Models.Dto;
 using boilerplate.web.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Data;
 using System.Reflection;
@@ -15,17 +16,19 @@ namespace boilerplate.web.Controllers
 {
     public class AuthController : Controller
     {
-        private readonly MasterDbContext _context;
+        //private readonly MasterDbContext _context;
         private readonly IUserSessionService _userSessionService;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IAuthService _authService;
 
-        public AuthController(MasterDbContext context, IUserSessionService userSessionService, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+        public AuthController(IUserSessionService userSessionService, IMapper mapper, IHttpContextAccessor httpContextAccessor, IAuthService authService)
         {
-            _context = context;
+            //_context = context;
             _userSessionService = userSessionService;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
+            _authService = authService;
         }
 
         public IActionResult Index()
@@ -39,41 +42,54 @@ namespace boilerplate.web.Controllers
         }
 
         [HttpPost]
-        public IActionResult Login(MUser mUser)
+        public async Task<IActionResult> Login(MUser mUser)
         {
-            var _admin = _context.Users.Where(s => s.Email == mUser.Email).FirstOrDefault();
-            if (_admin != null)
+            LoginResponseDto loginResponseDto = null;
+            if (!ModelState.IsValid)
             {
-                if (_admin.Password == mUser.Password)
+                APIResponseDto? response = await _authService.Login(new LoginRequestDto { Email = mUser.Email, Password = mUser.Password });
+                if (response != null && response.IsSuccess)
                 {
-                    LoggedInUser userSession = new LoggedInUser { Email = _admin.Email, RoleID = (int)_admin.RolesId, UserID = _admin.Id, UserName = _admin.FullName };
+                    loginResponseDto = JsonConvert.DeserializeObject<LoginResponseDto>(Convert.ToString(response.Result));
+
+                    LoggedInUser userSession = new LoggedInUser { Email = loginResponseDto.User.Email, RoleID = loginResponseDto.User.RoleID, UserID = loginResponseDto.User.ID, UserName = loginResponseDto.User.FullName };
                     _userSessionService.SetUserSession(userSession);
-
-                    var loggeInUser = _userSessionService.GetUserSession();
-                    int roleId = loggeInUser.RoleID;
-
-                    var ss = _context.RolePermissons.Where(s => s.RoleId == loggeInUser.RoleID).Select(z => z.PermissionId).ToList();
-                    List<MPermissions> mpermission = _context.MPermissions.Where(s => ss.Contains(s.Id)).ToList();
-
-                    var lstRolePermission = _mapper.Map<List<LoggeInUserRolePermission>>(mpermission).ToList();
-                    _userSessionService.SetRolePermissionSession(lstRolePermission.ToList());
-
-                    //ds = ToDataSet(menus);
-                    //DataTable table = ds.Tables[0];
-                    //DataRow[] parentMenus = table.Select("IsMenu = 'True'");
-
-                    //var sb = new StringBuilder();
-                    //string menuString = GenerateUL(parentMenus, table, sb);
-                    //HttpContext.Session.SetString("menuString", menuString);
-
-                    return RedirectToAction(nameof(Index), "Home");
-
-                    //return Json(new { status = true, message = "Login Successfull!" });
                 }
                 else
                 {
-                    return Json(new { status = true, message = "Invalid Password!" });
+                    TempData["error"] = response?.Message;
+                    return RedirectToAction(nameof(Login), "Auth");
                 }
+            }
+
+            if (loginResponseDto != null)
+            {
+                var loggeInUser = _userSessionService.GetUserSession();
+                List<LoggeInUserRolePermission> mpermission = new List<LoggeInUserRolePermission>();
+                if (loggeInUser != null)
+                {
+                    APIResponseDto? response = await _authService.GetPermissonByRoleID(loginResponseDto.User.RoleID);
+                    if (response != null && response.IsSuccess)
+                    {
+                        mpermission = JsonConvert.DeserializeObject<List<LoggeInUserRolePermission>>(Convert.ToString(response.Result));
+                        _userSessionService.SetRolePermissionSession(mpermission);
+                    }
+                    else
+                    {
+                        TempData["error"] = response?.Message;
+                    }
+                }
+                //ds = ToDataSet(menus);
+                //DataTable table = ds.Tables[0];
+                //DataRow[] parentMenus = table.Select("IsMenu = 'True'");
+
+                //var sb = new StringBuilder();
+                //string menuString = GenerateUL(parentMenus, table, sb);
+                //HttpContext.Session.SetString("menuString", menuString);
+
+                return RedirectToAction(nameof(Index), "Home");
+
+                //return Json(new { status = true, message = "Login Successfull!" });
             }
             else
             {

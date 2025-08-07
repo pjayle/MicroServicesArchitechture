@@ -17,7 +17,7 @@
         public string ParentId { get; set; }
         public bool IsMenu { get; set; }
         public string Description { get; set; }
-        public int SequenceNo { get; set; }
+        public int? SequenceNo { get; set; }
 
     }
 }

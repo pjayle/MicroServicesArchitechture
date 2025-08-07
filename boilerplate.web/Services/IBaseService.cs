@@ -123,7 +123,7 @@ namespace boilerplate.web.Services
                         }
                         else
                         {
-                            apiResponseDto = new APIResponseDto { IsSuccess = false, Message = "ERROR", Result = apiContent };
+                            apiResponseDto = new APIResponseDto { IsSuccess = false, Message = "ERROR : " + apiResponse.StatusCode.ToString(), Result = apiContent };
                         }
                         return apiResponseDto;
                 }

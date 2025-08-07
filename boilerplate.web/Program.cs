@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<MasterDbContext>(options =>options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<MasterDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddSession(options =>
 {
@@ -16,6 +16,7 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 CONST.MICRO_SERVICE_API_BASE_URL = builder.Configuration["ServiceUrls:MICRO_SERVICE_API_BASE_URL"];
+CONST.MICRO_SERVICE_API_BASE_URL_AUTH = builder.Configuration["ServiceUrls:MICRO_SERVICE_API_BASE_URL_AUTH"];
 
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
@@ -24,6 +25,7 @@ builder.Services.AddScoped<ITokenProvider, TokenProvider>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<MyAuthorization>();
 builder.Services.AddControllersWithViews(options =>
 {
@@ -59,6 +61,6 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");
-    //pattern: "{controller=Home}/{action=Index}/{id?}");
+//pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
