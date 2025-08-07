@@ -7,6 +7,12 @@ using MediatR;
 using service.userapi.Service;
 
 var builder = WebApplication.CreateBuilder(args);
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//THIS IS FOR CASHING CONFIGURATION
+builder.Services.AddResponseCaching(); // USE FOR response cache technique
+builder.Services.AddMemoryCache(); // USE FOR in memory cache technique
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 //builder.Host.UseSerilog();
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // THIS IS FOR MEDIATOR FOR CQRS CONFIGURATION
@@ -33,7 +39,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//THIS IS FOR CASHING CONFIGURATION
+app.UseResponseCaching();
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //THIS IS FOR YARP COMMUNICATION TO GATEWAY
 app.MapGet("/health", () => Results.Ok("Healthy"));

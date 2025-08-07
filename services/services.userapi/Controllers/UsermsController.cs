@@ -1,7 +1,8 @@
 ﻿using AutoMapper;
+using Azure;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Serilog;
 using service.userapi.Data.Mediator;
 using service.userapi.Models;
@@ -15,18 +16,22 @@ namespace service.userapi.Controllers
     {
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly IMemoryCache _memoryCache;
         private readonly IMediator _userMediator;
         private APIResponseDto _response;
         private readonly string ControllerName = "userms";
-        public UsermsController(IConfiguration configuration, IMediator mediator, IMapper mapper)
+
+        public UsermsController(IConfiguration configuration, IMediator mediator, IMapper mapper, IMemoryCache memoryCache)
         {
             this._configuration = configuration;
             this._userMediator = mediator;
             this._mapper = mapper;
+            this._memoryCache = memoryCache;
             _response = new APIResponseDto();
         }
 
         [HttpGet]
+        [ResponseCache(Duration = 10, Location = ResponseCacheLocation.Any)] //THIS IS EXEMPLE OF ResponseCache
         public async Task<IActionResult> GetAll()
         {
             try
@@ -49,9 +54,22 @@ namespace service.userapi.Controllers
         {
             try
             {
+                if (_memoryCache.TryGetValue($"user_{id}", out MUser mUser))  //THIS IS EXEMPLE OF InMemory Cache
+                {
+                    _response.Message = "SUCCESS";
+                    _response.IsSuccess = true;
+                    _response.Result = mUser;
+                    return Ok(_response);
+                }
+
                 _response.Result = await _userMediator.Send(new GetUserByIdQuery() { Id = id });
                 _response.Message = "SUCCESS";
                 _response.IsSuccess = true;
+
+                var cacheOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10))
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(1)).SetPriority(CacheItemPriority.High);
+
+                _memoryCache.Set($"user_{id}", _response.Result, cacheOptions);
             }
             catch (Exception ex)
             {
