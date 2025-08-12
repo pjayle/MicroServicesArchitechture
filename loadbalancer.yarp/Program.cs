@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.RateLimiting;
+
 var builder = WebApplication.CreateBuilder(args);
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -15,6 +17,17 @@ builder.Services.AddReverseProxy().LoadFromConfig(builder.Configuration.GetSecti
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//THIS IS FOR SET RATE LIMIT
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("api-limit", opt =>
+    {
+        opt.PermitLimit = 100;          // 100 requests
+        opt.Window = TimeSpan.FromMinutes(1);  // per minute
+        opt.QueueLimit = 10;            // 10 queued requests
+    });
+});
 var app = builder.Build();
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //THIS IS FOR YARP CONFIGURATION
@@ -34,7 +47,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
-
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//THIS IS FOR SET RATE LIMIT
+app.UseRateLimiter();  // Add before MapReverseProxy()
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 app.MapReverseProxy();
 app.Run("https://localhost:7003");
 //app.Run();
